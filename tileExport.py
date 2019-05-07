@@ -9,11 +9,10 @@ tilingScheme = arcpy.GetParameterAsText(2)
 #if necessary.
 
 scales = "288895.277144;144447.638572;72223.819286;36111.909643;18055.954822;9027.977411"
-areaofinterest = "#"
 mincachedscale = "288895.277144"
 maxcachedscale = "9027.977411"
 
-#Constants DO NOT CHANGE
+#Constants ---DO NOT ALTER THIS BLOCK---
 mode = "RECREATE_ALL_TILES"
 dataSource = mxdin
 method = "IMPORT_SCHEME"
@@ -21,13 +20,18 @@ cacheType = "TILE_PACKAGE"
 storageFormat = "COMPACT"
 temp_lyr_name = "temp"
 temp_ftr_name = "tmp_feature"
-
-#Layer manipulation requires that the mxd object be the current mxd
-mxd = arcpy.mapping.MapDocument("CURRENT")
-mxd.save()
-ddp = mxd.dataDrivenPages
 pof = folder + os.sep + "tile_pkgs"
-df = arcpy.mapping.ListDataFrames(mxd)[0]
+areaofinterest = "#"
+
+#Uncomment this line if using ArcGIS 10.4.1 or lower.
+v = float(arcpy.GetInstallInfo()['Version'][:4])
+
+if v < 10.5:
+    arcpy.env.parallelProcessingFactor = "0"
+    arcpy.AddMessage("Version lower than 10.5 detected, limited to 1 CPU")
+else:
+    arcpy.env.parallelProcessingFactor = ""
+    arcpy.AddMessage("Version 10.5 or higher detected, using default CPUs")
 
 #Check that tile scheme is an xml document.
 schemExt = os.path.splitext(tilingScheme)[-1]
@@ -37,7 +41,6 @@ if schemExt == ".xml":
 else:
     arcpy.AddError("File other than XML passed to tool. Select a valid XML tiling schema.")
     quit()
-    
 
 # Create tile package target Directory if don't exist
 if not os.path.exists(pof):
@@ -45,6 +48,14 @@ if not os.path.exists(pof):
     arcpy.AddMessage("Directory " + pof +  " Created ")
 else:    
     arcpy.AddMessage("Directory " + pof +  " already exists")
+
+
+#Layer manipulation requires that the mxd object be the current mxd
+mxd = arcpy.mapping.MapDocument("CURRENT")
+mxd.save()
+ddp = mxd.dataDrivenPages
+df = arcpy.mapping.ListDataFrames(mxd)[0]
+
 
 #Iterate through all pages in the current mxd
 for i in range(1, mxd.dataDrivenPages.pageCount + 1):
@@ -72,6 +83,13 @@ for i in range(1, mxd.dataDrivenPages.pageCount + 1):
      cacheType,storageFormat,scales, temp_ftr_name)
     #Cleanup
     arcpy.Delete_management(temp_ftr_name)
+
+    
+
+
+
+
+
 
     
 
